@@ -1,3 +1,6 @@
+pub struct Network {
+    elements: Vec<Element>,
+}
 pub enum LogicType {
     AND,
     OR,
@@ -7,37 +10,56 @@ pub enum LogicType {
     NOT,
     SENSOR,
 }
-fn And(inputs: &Vec<usize>) -> bool {
-    // AND all input bools.
-    //inputs.iter().all(|&b| b) // Check to make sure this works bro. Alternative method using fold 
-                              // would be: inputs.iter().fold(true, |acc, &b| acc && b). For OR the
-                              // fold method would be: index.iter().fold(false, |acc, &b| acc || b);
-    true
+fn and(inputs: &Vec<usize>, network: &Network) -> bool {
+    let mut next_state: bool = false; 
+    for input in inputs.iter() {
+        match network.get_element_state(*input) { // This is because through the iteration of the
+                                                  // vector the usize is borrowed.
+            Some(state) => next_state = next_state && state,
+            None => {},
+        }
+    }
+    next_state
 }
-fn Or(inputs: &Vec<usize>) -> bool {
-    //inputs.iter().any(|&b| b)
-    true
+fn or(inputs: &Vec<usize>, network: &Network) -> bool {
+    let mut next_state: bool = false; 
+    for input in inputs.iter() {
+        match network.get_element_state(*input) {
+            Some(state) => {
+                if state {
+                    next_state = true;
+                    break;
+                }
+            },
+            None => {},
+        }
+    }
+    next_state
 }
-fn Nand(inputs: &Vec<usize>) -> bool {
-    // !inputs.iter().all(|&b| b)
-    true
+fn nand(inputs: &Vec<usize>, network: &Network) -> bool {
+    !and(inputs, network)
 }
-fn Nor(inputs: &Vec<usize>) -> bool {
-    // !inputs.iter().any(|&b| b)
-    true
+fn nor(inputs: &Vec<usize>, network: &Network) -> bool {
+    !or(inputs, network)
 }
-fn Xor(inputs: &Vec<usize>) -> bool {
-    //inputs.iter().fold(false, |acc, &b| acc ^ b)
-    true
+fn xor(inputs: &Vec<usize>, network: &Network) -> bool {
+    let mut next_state: bool = false; 
+    for input in inputs.iter() {
+        match network.get_element_state(*input) {
+            Some(state) => next_state = next_state != state,
+            None => {},
+        }
+    }
+    next_state
 }
 struct Logic {
     state: bool,
-    processor: fn(&Vec<usize>) -> bool,
+    processor: fn(&Vec<usize>, &Network) -> bool,
     inputs: Vec<usize>,
 }
 impl Logic {
-    fn process(&self) -> bool {
-        (self.processor)(&self.inputs)
+    fn process(&self, network: &Network) -> bool {
+        (self.processor)(&self.inputs, network)
     }
 }
 struct LogicNot { // It might be benifical to just make this a NOR, then we dont have to check for
@@ -48,9 +70,13 @@ struct LogicNot { // It might be benifical to just make this a NOR, then we dont
     input: usize,
 }
 impl LogicNot {
-    fn process(&self) -> bool {
-        // !self.input
-        true
+    fn process(&self, network: &Network) -> bool {
+        let mut next_state: bool = true;
+        match network.get_element_state(self.input) {
+            Some(state) => next_state = !state,
+            None => {},
+        }
+        next_state
     }
 }
 struct Sensor {
@@ -70,11 +96,8 @@ enum Element {
     LogicNot(LogicNot),
     Sensor(Sensor),
 }
-pub struct Network {
-    elements: Vec<Element>,
-}
 impl Network {
-    fn add_logic(&mut self, element_type: LogicType, inputs: Vec<usize>) -> usize { // Takes
+    fn add_element(&mut self, element_type: LogicType, inputs: Vec<usize>) -> usize { // Takes
                                                                                     // ownership of
                                                                                     // the inputs
                                                                                     // Vec<usize>
@@ -83,7 +106,7 @@ impl Network {
             LogicType::AND => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: And,
+                    processor: and,
                     inputs: inputs, // This is going to throw an error for a copy or a reference
                                     // yeah...
                 }));
@@ -91,28 +114,28 @@ impl Network {
             LogicType::OR => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Or,
+                    processor: or,
                     inputs: inputs,
                 }));
             }
             LogicType::NAND => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Nand,
+                    processor: nand,
                     inputs: inputs,
                 }));
             }
             LogicType::NOR => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Nor,
+                    processor: nor,
                     inputs: inputs,
                 }));
             }
             LogicType::XOR => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Xor,
+                    processor: xor,
                     inputs: inputs, // What is the significance of XOR with more than two inputs?
                 }));
             }
@@ -194,7 +217,7 @@ impl Network {
         if let Some(element) = self.elements.get(index) {
             match element {
                 Element::Logic(logic) => {
-                    if logic.processor == And as fn(&Vec<usize>) -> bool { // Here we are comparing
+                    if logic.processor == and as fn(&Vec<usize>, &Network) -> bool { // Here we are comparing
                                                                            // the function pointer
                                                                            // inside our element to
                                                                            // the actual function
@@ -202,13 +225,13 @@ impl Network {
                                                                            // logic type it is
                                                                            // after initialization.
                         Some(LogicType::AND)
-                    } else if logic.processor == Or as fn(&Vec<usize>) -> bool {
+                    } else if logic.processor == or as fn(&Vec<usize>, &Network) -> bool {
                         Some(LogicType::OR)
-                    } else if logic.processor == Nand as fn(&Vec<usize>) -> bool {
+                    } else if logic.processor == nand as fn(&Vec<usize>, &Network) -> bool {
                         Some(LogicType::NAND)
-                    } else if logic.processor == Nor as fn(&Vec<usize>) -> bool {
+                    } else if logic.processor == nor as fn(&Vec<usize>, &Network) -> bool {
                         Some(LogicType::NOR)
-                    } else if logic.processor == Xor as fn(&Vec<usize>) -> bool {
+                    } else if logic.processor == xor as fn(&Vec<usize>, &Network) -> bool {
                         Some(LogicType::XOR)
                     } else {
                         Some(LogicType::SENSOR) // Seems the least risky option is to return a SENSOR
