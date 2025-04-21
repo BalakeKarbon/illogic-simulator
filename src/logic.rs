@@ -170,7 +170,7 @@ impl Network {
             }
         }
         self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
-        self.elements.len()
+        self.elements.len()-1
     }
     pub fn add_element(&mut self, element_type: LogicType, inputs: Vec<usize>) -> usize { // Takes
                                                                                     // ownership of
@@ -235,7 +235,7 @@ impl Network {
                 }
             }
             self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
-            self.elements.len()
+            self.elements.len()-1
         } else {
             std::usize::MAX
         }
@@ -245,11 +245,11 @@ impl Network {
             state: false,
         }));
         self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
-        self.elements.len()
+        self.elements.len()-1
     }
     pub fn remove_element(&mut self, index: usize) -> Vec<usize> { // Perhaps return effected elements or a truth value?
         let mut containing_elements: Vec<usize> = Vec::new();
-        if self.elements.len() >= index {
+        if self.elements.len() > index {
             self.elements.remove(index);
             for (e,element) in self.elements.iter_mut().enumerate() {
                 match element {
