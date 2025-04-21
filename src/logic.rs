@@ -143,10 +143,11 @@ impl Network {
         }));
         self.elements.len()
     }
-    fn remove_element(&mut self, index: usize) { // Perhaps return effected elements or a truth value?
+    fn remove_element(&mut self, index: usize) -> Vec<usize> { // Perhaps return effected elements or a truth value?
+        let mut containing_elements: Vec<usize> = Vec::new();
         if self.elements.len() >= index {
             self.elements.remove(index);
-            for element in self.elements.iter_mut() {
+            for (e,element) in self.elements.iter_mut().enumerate() {
                 match element {
                     Element::Sensor(sensor) => {}
                     Element::LogicNot(logic) => {
@@ -161,23 +162,33 @@ impl Network {
                                                              // BECAUSE IN THE PROCESSING IT WILL
                                                              // LOOK FOR AN ELEMENT AT THAT VALUE
                                                              // UNLESS IT IS CAUGHT!!?! 
+                            containing_elements.push(e);
                         } else if logic.input > index {
                             logic.input -= 1;
+                            containing_elements.push(e);
                         }
                     }
                     Element::Logic(logic) => {
-                        logic.inputs.retain(|&i| i != index); //Make sure this is removing the
-                                                              //element at that index.
+                        let mut found: bool = false;
                         for input in logic.inputs.iter_mut() {
                             if *input > index { // How is this safe rust? Take a minute to
                                                 // understand this at some point pls.
                                 *input -= 1;
+                                found = true;
+                            } else if *input == index {
+                                found = true;
                             }
+                        }
+                        logic.inputs.retain(|&i| i != index); //Make sure this is removing the
+                                                              //element at that index.
+                        if found {
+                            containing_elements.push(e);
                         }
                     }
                 }
             }
         }
+        containing_elements
     }
     fn get_element_type(&self, index: usize) -> Option<LogicType> { // holdup gotta add sensor
         if let Some(element) = self.elements.get(index) {
