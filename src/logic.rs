@@ -1,5 +1,9 @@
 pub struct Network {
     elements: Vec<Element>,
+    stage_count: usize, // Only using a usize as it will prevent allignment issues in the
+                        // architecture and potentially provide a preformance boost. Some testing
+                        // would be interesting later.
+    stage_buffer: Vec<bool>,
 }
 pub enum LogicType {
     AND,
@@ -61,6 +65,9 @@ impl Logic {
     fn process(&self, network: &Network) -> bool {
         (self.processor)(&self.inputs, network)
     }
+    fn set_state(&mut self, state: bool) { // Should this be a reference to the bool?
+        self.state = state;
+    }
 }
 struct LogicNot { // It might be benifical to just make this a NOR, then we dont have to check for
                   // std::usize::MAX for a no input situation. Although the processing may be
@@ -77,6 +84,9 @@ impl LogicNot {
             None => {},
         }
         next_state
+    }
+    fn set_state(&mut self, state: bool) { // Should this be a reference to the bool?
+        self.state = state;
     }
 }
 struct Sensor {
@@ -158,12 +168,14 @@ impl Network {
                 }));
             }
         }
+        self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
         self.elements.len()
     }
     fn add_sensor(&mut self) -> usize {
         self.elements.push(Element::Sensor(Sensor {
             state: false,
         }));
+        self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
         self.elements.len()
     }
     fn remove_element(&mut self, index: usize) -> Vec<usize> { // Perhaps return effected elements or a truth value?
@@ -172,7 +184,7 @@ impl Network {
             self.elements.remove(index);
             for (e,element) in self.elements.iter_mut().enumerate() {
                 match element {
-                    Element::Sensor(sensor) => {}
+                    Element::Sensor(sensor) => {},
                     Element::LogicNot(logic) => {
                         if logic.input == index {
                             logic.input = std::usize::MAX; // This is under the assumption that
@@ -211,6 +223,7 @@ impl Network {
                 }
             }
         }
+        self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
         containing_elements
     }
     fn get_element_type(&self, index: usize) -> Option<LogicType> { // holdup gotta add sensor
@@ -257,6 +270,17 @@ impl Network {
             None
         }
     }
+    fn process_element(&self, index: usize) -> Option<bool> {
+        if let Some(element) = self.elements.get(index) {
+            match element {
+                Element::Logic(logic) => Some(logic.process(self)),
+                Element::LogicNot(logic) => Some(logic.process(self)),
+                Element::Sensor(sensor) => Some(sensor.process()),
+            }
+        } else {
+            None
+        }
+    }
     fn set_sensor_state(&mut self, index: usize, state: bool) -> Option<LogicType> {
         if let Some(element) = self.elements.get_mut(index) {
             match element {
@@ -270,6 +294,36 @@ impl Network {
             }
         } else {
             None
+        }
+    }
+    fn cycle(&mut self) {
+        for stage in 0..self.stage_count {
+            for base_index in 0..self.stage_buffer.len() {
+                match self.process_element((base_index*self.stage_count)+stage) {
+                    Some(next_state) => {
+                        self.stage_buffer[base_index] = next_state;
+                    }
+                    None => {
+                        self.stage_buffer[base_index] = false; // This should only be reached if
+                                                               // the element does not exist in
+                                                               // which case we dont want a value
+                                                               // there for the next stage.
+                    },
+                }
+            }
+            for base_index in 0..self.stage_buffer.len() {
+                if let Some(element) = self.elements.get_mut((base_index*self.stage_count)+stage) {
+                    match element {
+                        Element::Logic(logic) => {
+                            logic.set_state(self.stage_buffer[base_index]);
+                        }
+                        Element::LogicNot(logic) => {
+                            logic.set_state(self.stage_buffer[base_index]);
+                        }
+                        Element::Sensor(sensor) => {}
+                    }
+                }
+            }
         }
     }
 }
