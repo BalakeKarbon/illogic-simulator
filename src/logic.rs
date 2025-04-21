@@ -296,34 +296,42 @@ impl Network {
             None
         }
     }
-    fn cycle(&mut self) {
-        for stage in 0..self.stage_count {
-            for base_index in 0..self.stage_buffer.len() {
-                match self.process_element((base_index*self.stage_count)+stage) {
-                    Some(next_state) => {
-                        self.stage_buffer[base_index] = next_state;
-                    }
-                    None => {
-                        self.stage_buffer[base_index] = false; // This should only be reached if
+    fn buffer_stage(&mut self, stage: usize) {
+        for base_index in 0..self.stage_buffer.len() {
+            match self.process_element((base_index*self.stage_count)+stage) {
+                Some(next_state) => {
+                    self.stage_buffer[base_index] = next_state;
+                }
+                None => {
+                    self.stage_buffer[base_index] = false; // This should only be reached if
                                                                // the element does not exist in
                                                                // which case we dont want a value
                                                                // there for the next stage.
-                    },
-                }
+                },
             }
-            for base_index in 0..self.stage_buffer.len() {
-                if let Some(element) = self.elements.get_mut((base_index*self.stage_count)+stage) {
-                    match element {
-                        Element::Logic(logic) => {
-                            logic.set_state(self.stage_buffer[base_index]);
-                        }
-                        Element::LogicNot(logic) => {
-                            logic.set_state(self.stage_buffer[base_index]);
-                        }
-                        Element::Sensor(sensor) => {}
+        }
+    }
+    fn write_stage(&mut self, stage: usize) {
+        for base_index in 0..self.stage_buffer.len() {
+            if let Some(element) = self.elements.get_mut((base_index*self.stage_count)+stage) {
+                match element {
+                    Element::Logic(logic) => {
+                        logic.set_state(self.stage_buffer[base_index]);
                     }
+                    Element::LogicNot(logic) => {
+                        logic.set_state(self.stage_buffer[base_index]);
+                    }
+                    Element::Sensor(sensor) => {}
                 }
             }
+        }
+    }
+    fn cycle(&mut self) {
+        for stage in 0..self.stage_count {
+            // These two stages must happen in order but within each stage could be parallelized if
+            // synced properly.
+            self.buffer_stage(stage);
+            self.write_stage(stage);
         }
     }
 }
