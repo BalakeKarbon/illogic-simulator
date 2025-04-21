@@ -107,17 +107,25 @@ enum Element {
     Sensor(Sensor),
 }
 impl Network {
-    fn add_element(&mut self, element_type: LogicType, inputs: Vec<usize>) -> usize { // Takes
+    pub fn new() -> Self {
+        Network {
+            elements: Vec::new(),
+            stage_count: 5, // This is the default stage count. Perhaps this should be modifiable in
+                        // the future.
+            stage_buffer: Vec::new(),
+        }
+    }
+    pub fn add_empty_element(&mut self, element_type: LogicType) -> usize { // Takes
                                                                                     // ownership of
                                                                                     // the inputs
                                                                                     // Vec<usize>
         match element_type { // We still need to add the code for determining what section of
-                             // processing during the cycle per element.
+                                 // processing during the cycle per element.
             LogicType::AND => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
                     processor: and,
-                    inputs: inputs, // This is going to throw an error for a copy or a reference
+                    inputs: Vec::new(), // This is going to throw an error for a copy or a reference
                                     // yeah...
                 }));
             }
@@ -125,42 +133,35 @@ impl Network {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
                     processor: or,
-                    inputs: inputs,
+                    inputs: Vec::new(),
                 }));
             }
             LogicType::NAND => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
                     processor: nand,
-                    inputs: inputs,
+                    inputs: Vec::new(),
                 }));
             }
             LogicType::NOR => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
                     processor: nor,
-                    inputs: inputs,
+                    inputs: Vec::new(),
                 }));
             }
             LogicType::XOR => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
                     processor: xor,
-                    inputs: inputs, // What is the significance of XOR with more than two inputs?
+                    inputs: Vec::new(),
                 }));
             }
             LogicType::NOT => {
-                match inputs.get(0) {
-                    Some(&input) => {
-                        self.elements.push(Element::LogicNot(LogicNot {
-                            state: false,
-                            input: input, //Returns Some????? Need more logic here folks.
-                        }));
-                    }
-                    None => {
-                        return std::usize::MAX;
-                    }
-                }
+                self.elements.push(Element::LogicNot(LogicNot {
+                    state: false,
+                    input: std::usize::MAX,
+                }));
             }
             LogicType::SENSOR => {
                 self.elements.push(Element::Sensor(Sensor {
@@ -171,14 +172,82 @@ impl Network {
         self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
         self.elements.len()
     }
-    fn add_sensor(&mut self) -> usize {
+    pub fn add_element(&mut self, element_type: LogicType, inputs: Vec<usize>) -> usize { // Takes
+                                                                                    // ownership of
+                                                                                    // the inputs
+                                                                                    // Vec<usize>
+        if (inputs.len() > 0) && (self.elements_exist(&inputs).len() != 0) {
+            match element_type { // We still need to add the code for determining what section of
+                                 // processing during the cycle per element.
+                LogicType::AND => {
+                    self.elements.push(Element::Logic(Logic {
+                        state: false,
+                        processor: and,
+                        inputs: inputs, // This is going to throw an error for a copy or a reference
+                                        // yeah...
+                    }));
+                }
+                LogicType::OR => {
+                    self.elements.push(Element::Logic(Logic {
+                        state: false,
+                        processor: or,
+                        inputs: inputs,
+                    }));
+                }
+                LogicType::NAND => {
+                    self.elements.push(Element::Logic(Logic {
+                        state: false,
+                        processor: nand,
+                        inputs: inputs,
+                    }));
+                }
+                LogicType::NOR => {
+                    self.elements.push(Element::Logic(Logic {
+                        state: false,
+                        processor: nor,
+                        inputs: inputs,
+                    }));
+                }
+                LogicType::XOR => {
+                    self.elements.push(Element::Logic(Logic {
+                        state: false,
+                        processor: xor,
+                        inputs: inputs, // What is the significance of XOR with more than two inputs?
+                    }));
+                }
+                LogicType::NOT => {
+                    match inputs.get(0) {
+                        Some(&input) => {
+                            self.elements.push(Element::LogicNot(LogicNot {
+                                state: false,
+                                input: input, //Returns Some????? Need more logic here folks.
+                            }));
+                        }
+                        None => {
+                            return std::usize::MAX;
+                        }
+                    }
+                }
+                LogicType::SENSOR => {
+                    self.elements.push(Element::Sensor(Sensor {
+                        state: false,
+                    }));
+                }
+            }
+            self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
+            self.elements.len()
+        } else {
+            std::usize::MAX
+        }
+    }
+    pub fn add_sensor(&mut self) -> usize {
         self.elements.push(Element::Sensor(Sensor {
             state: false,
         }));
         self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
         self.elements.len()
     }
-    fn remove_element(&mut self, index: usize) -> Vec<usize> { // Perhaps return effected elements or a truth value?
+    pub fn remove_element(&mut self, index: usize) -> Vec<usize> { // Perhaps return effected elements or a truth value?
         let mut containing_elements: Vec<usize> = Vec::new();
         if self.elements.len() >= index {
             self.elements.remove(index);
@@ -226,7 +295,7 @@ impl Network {
         self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
         containing_elements
     }
-    fn get_element_type(&self, index: usize) -> Option<LogicType> { // holdup gotta add sensor
+    pub fn get_element_type(&self, index: usize) -> Option<LogicType> {
         if let Some(element) = self.elements.get(index) {
             match element {
                 Element::Logic(logic) => {
@@ -259,7 +328,7 @@ impl Network {
             None
         }
     }
-    fn get_element_state(&self, index: usize) -> Option<bool> {
+    pub fn get_element_state(&self, index: usize) -> Option<bool> {
         if let Some(element) = self.elements.get(index) {
             match element {
                 Element::Logic(logic) => Some(logic.state),
@@ -269,6 +338,81 @@ impl Network {
         } else {
             None
         }
+    }
+    pub fn get_element_inputs(&self, index: usize) -> Option<Vec<usize>> {
+        if let Some(element) = self.elements.get(index) {
+            match element {
+                Element::Logic(logic) => {
+                    Some(logic.inputs.clone()) // Return a duplicate representation.
+                }
+                Element::LogicNot(logic) => {
+                    let mut inputs: Vec<usize> = vec![logic.input];
+                    Some(inputs)
+                }
+                Element::Sensor(sensor) => {
+                    None
+                }
+            }
+        } else {
+            None
+        }
+    }
+    fn elements_exist(&self, inputs: &Vec<usize>) -> Vec<usize> {
+        let mut non_existing_elements: Vec<usize> = Vec::new();
+        for index in inputs {
+            if self.elements.len() < *index {
+                non_existing_elements.push(*index);
+            }
+        }
+        non_existing_elements
+    }
+    pub fn set_element_inputs(&mut self, index: usize, inputs: &Vec<usize>) -> Option<Vec<usize>> {
+        let mut non_existing_elements: Vec<usize> = self.elements_exist(inputs);
+        if non_existing_elements.len() == 0 {
+            if let Some(element) = self.elements.get_mut(index) {
+                match element {
+                    Element::Logic(logic) => {
+                        logic.inputs = inputs.to_vec();
+                        None
+                    }
+                    Element::LogicNot(logic) => {
+                        logic.input = inputs[0];
+                        None
+                    }
+                    Element::Sensor(sensor) => {
+                        Some(non_existing_elements)
+                    }
+                }
+            } else {
+                Some(non_existing_elements)
+            }
+        } else {
+            Some(non_existing_elements)
+        }
+    }
+    pub fn add_element_input(&mut self, index: usize, input: usize) -> Option<usize> {
+        let mut non_existing_elements: Vec<usize> = self.elements_exist(&vec![input]);
+        if non_existing_elements.len() == 0 {
+            if let Some(element) = self.elements.get_mut(index) {
+                match element {
+                    Element::Logic(logic) => {
+                        logic.inputs.push(input);
+                        None
+                    }
+                    Element::LogicNot(logic) => {
+                        logic.input = input;
+                        None
+                    }
+                    Element::Sensor(sensor) => {
+                        Some(index)
+                    }
+                }
+            } else {
+                Some(index)
+            }
+        } else {
+            Some(index)
+        }       
     }
     fn process_element(&self, index: usize) -> Option<bool> {
         if let Some(element) = self.elements.get(index) {
@@ -281,7 +425,7 @@ impl Network {
             None
         }
     }
-    fn set_sensor_state(&mut self, index: usize, state: bool) -> Option<LogicType> {
+    pub fn set_sensor_state(&mut self, index: usize, state: bool) -> Option<LogicType> {
         if let Some(element) = self.elements.get_mut(index) {
             match element {
                 Element::Sensor(sensor) => {
@@ -326,12 +470,15 @@ impl Network {
             }
         }
     }
-    fn cycle(&mut self) {
+    pub fn cycle(&mut self) {
         for stage in 0..self.stage_count {
             // These two stages must happen in order but within each stage could be parallelized if
             // synced properly.
             self.buffer_stage(stage);
             self.write_stage(stage);
         }
+    }
+    pub fn get_size(&self) -> usize {
+        self.elements.len()
     }
 }
