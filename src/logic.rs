@@ -5,50 +5,54 @@ pub enum LogicType {
     NOR,
     XOR,
     NOT,
+    SENSOR,
 }
-
 fn And(inputs: &Vec<usize>) -> bool {
     // AND all input bools.
-    inputs.iter().all(|&b| b) // Check to make sure this works bro. Alternative method using fold 
+    //inputs.iter().all(|&b| b) // Check to make sure this works bro. Alternative method using fold 
                               // would be: inputs.iter().fold(true, |acc, &b| acc && b). For OR the
                               // fold method would be: index.iter().fold(false, |acc, &b| acc || b);
+    true
 }
 fn Or(inputs: &Vec<usize>) -> bool {
-    inputs.iter().any(|&b| b)
+    //inputs.iter().any(|&b| b)
+    true
 }
 fn Nand(inputs: &Vec<usize>) -> bool {
-    !inputs.iter().all(|&b| b)
+    // !inputs.iter().all(|&b| b)
+    true
 }
 fn Nor(inputs: &Vec<usize>) -> bool {
-    !inputs.iter().any(|&b| b)
+    // !inputs.iter().any(|&b| b)
+    true
 }
 fn Xor(inputs: &Vec<usize>) -> bool {
-    inputs.iter().fold(false, |acc, &b| acc ^ b)
+    //inputs.iter().fold(false, |acc, &b| acc ^ b)
+    true
 }
-/* fn Not(inputs: &Vec<usize>) -> bool { // Do we want a vector of inputs? I mean its only practical
-                                      // with one input so if we keep the vector we must decide how
-                                      // we want to process that like an OR of all of them and then
-                                      // an invert of that which is just a NOR...???? or we do a
-                                      // seperate one with just one value...?
-    !inputs.iter().any(|&b| b)
-} */
-
 struct Logic {
     state: bool,
     processor: fn(&Vec<usize>) -> bool,
     inputs: Vec<usize>,
 }
-
 impl Logic {
     fn process(&self) -> bool {
         (self.processor)(&self.inputs)
     }
 }
-
+struct LogicNot {
+    state: bool,
+    input: usize,
+}
+impl LogicNot {
+    fn process(&self) -> bool {
+        // !self.input
+        true
+    }
+}
 struct Sensor {
     state: bool,
 }
-
 impl Sensor {
     fn process(&self) -> bool {
         self.state // This perhaps could be defined as a function like the other logic in which
@@ -58,62 +62,72 @@ impl Sensor {
         self.state = state;
     }
 }
-
 enum Element {
     Logic(Logic),
+    LogicNot(LogicNot),
     Sensor(Sensor),
 }
-
 pub struct Network {
     elements: Vec<Element>,
 }
-
 impl Network {
-    fn add_logic(&mut self, element_type: LogicType, inputs: &Vec<usize>) -> usize {
+    fn add_logic(&mut self, element_type: LogicType, inputs: Vec<usize>) -> usize { // Takes
+                                                                                    // ownership of
+                                                                                    // the inputs
+                                                                                    // Vec<usize>
         match element_type {
             LogicType::AND => {
-                self.elements.push(Element::Sensor(Sensor {
+                self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: And(inputs),
+                    processor: And,
                     inputs: inputs, // This is going to throw an error for a copy or a reference
                                     // yeah...
                 }));
             }
             LogicType::OR => {
-                self.elements.push(Element::Sensor(Sensor {
+                self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Or(inputs),
+                    processor: Or,
                     inputs: inputs,
                 }));
             }
             LogicType::NAND => {
-                self.elements.push(Element::Sensor(Sensor {
+                self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Nand(inputs),
+                    processor: Nand,
                     inputs: inputs,
                 }));
             }
             LogicType::NOR => {
-                self.elements.push(Element::Sensor(Sensor {
+                self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Nor(inputs),
+                    processor: Nor,
                     inputs: inputs,
                 }));
             }
             LogicType::XOR => {
-                self.elements.push(Element::Sensor(Sensor {
+                self.elements.push(Element::Logic(Logic {
                     state: false,
-                    processor: Xor(inputs),
-                    inputs: inputs,
+                    processor: Xor,
+                    inputs: inputs, // What is the significance of XOR with more than two inputs?
                 }));
             }
             LogicType::NOT => {
+                match inputs.get(0) {
+                    Some(&input) => {
+                        self.elements.push(Element::LogicNot(LogicNot {
+                            state: false,
+                            input: input, //Returns Some????? Need more logic here folks.
+                        }));
+                    }
+                    None => {
+                        return std::usize::MAX;
+                    }
+                }
+            }
+            LogicType::SENSOR => {
                 self.elements.push(Element::Sensor(Sensor {
                     state: false,
-                    processor: Nor(inputs), // Should this structure be different because only one
-                                            // input is practical for a not? Then perhaps it would
-                                            // not allow people to do crasy stuff?
-                    inputs: inputs,
                 }));
             }
         }
@@ -128,11 +142,60 @@ impl Network {
     fn remove_element(&mut self, index: usize) { // Perhaps return effected elements or a truth value?
 
     }
+    fn get_element_type(&self, index: usize) -> Option<LogicType> { // holdup gotta add sensor
+        if let Some(element) = self.elements.get(index) {
+            match element {
+                Element::Logic(logic) => {
+                    if logic.processor == And as fn(&Vec<usize>) -> bool { // Here we are comparing
+                                                                           // the function pointer
+                                                                           // inside our element to
+                                                                           // the actual function
+                                                                           // to determin which
+                                                                           // logic type it is
+                                                                           // after initialization.
+                        Some(LogicType::AND)
+                    } else if logic.processor == Or as fn(&Vec<usize>) -> bool {
+                        Some(LogicType::OR)
+                    } else if logic.processor == Nand as fn(&Vec<usize>) -> bool {
+                        Some(LogicType::NAND)
+                    } else if logic.processor == Nor as fn(&Vec<usize>) -> bool {
+                        Some(LogicType::NOR)
+                    } else if logic.processor == Xor as fn(&Vec<usize>) -> bool {
+                        Some(LogicType::XOR)
+                    } else {
+                        Some(LogicType::SENSOR) // Seems the least risky option is to return a SENSOR
+                                          // value if somehow the pointer is not aimed at any
+                                          // specific function!?
+                    }
+                }
+                Element::LogicNot(logic) => Some(LogicType::NOT),
+                Element::Sensor(sensor) => Some(LogicType::SENSOR),
+            }
+        } else {
+            None
+        }
+    }
     fn get_element_state(&self, index: usize) -> Option<bool> {
         if let Some(element) = self.elements.get(index) {
             match element {
                 Element::Logic(logic) => Some(logic.state),
+                Element::LogicNot(logic) => Some(logic.state),
                 Element::Sensor(sensor) => Some(sensor.state),
+            }
+        } else {
+            None
+        }
+    }
+    fn set_sensor_state(&mut self, index: usize, state: bool) -> Option<LogicType> {
+        if let Some(element) = self.elements.get_mut(index) {
+            match element {
+                Element::Sensor(sensor) => {
+                    sensor.set_state(state);
+                    Some(LogicType::SENSOR)
+                }
+                _ => {
+                    self.get_element_type(index)
+                }
             }
         } else {
             None
