@@ -5,8 +5,8 @@ mod logic;
 fn main() {
     let mut test_net: crate::logic::Network = crate::logic::Network::new();
     let mut elements: Vec<usize> = Vec::new();
-    elements.push(test_net.add_sensor());
-    elements.push(test_net.add_sensor());
+    elements.push(test_net.add_input());
+    elements.push(test_net.add_input());
     elements.push(test_net.add_empty_element(crate::logic::LogicType::NOR));
     elements.push(test_net.add_empty_element(crate::logic::LogicType::NOR));
     if let Some(index) = test_net.add_element_input(elements[2],100) {

@@ -12,7 +12,7 @@ pub enum LogicType {
     NOR,
     XOR,
     NOT,
-    SENSOR,
+    INPUT,
 }
 fn and(inputs: &Vec<usize>, network: &Network) -> bool {
     let mut next_state: bool = false; 
@@ -89,10 +89,10 @@ impl LogicNot {
         self.state = state;
     }
 }
-struct Sensor {
+struct Input {
     state: bool,
 }
-impl Sensor {
+impl Input {
     fn process(&self) -> bool {
         self.state // This perhaps could be defined as a function like the other logic in which
                    // case it could be seen as something like a reader, perhaps a bit more dynamic.
@@ -104,7 +104,7 @@ impl Sensor {
 enum Element {
     Logic(Logic),
     LogicNot(LogicNot),
-    Sensor(Sensor),
+    Input(Input),
 }
 impl Network {
     pub fn new() -> Self {
@@ -163,8 +163,8 @@ impl Network {
                     input: std::usize::MAX,
                 }));
             }
-            LogicType::SENSOR => {
-                self.elements.push(Element::Sensor(Sensor {
+            LogicType::INPUT => {
+                self.elements.push(Element::Input(Input {
                     state: false,
                 }));
             }
@@ -228,8 +228,8 @@ impl Network {
                         }
                     }
                 }
-                LogicType::SENSOR => {
-                    self.elements.push(Element::Sensor(Sensor {
+                LogicType::INPUT => {
+                    self.elements.push(Element::Input(Input {
                         state: false,
                     }));
                 }
@@ -240,8 +240,8 @@ impl Network {
             std::usize::MAX
         }
     }
-    pub fn add_sensor(&mut self) -> usize {
-        self.elements.push(Element::Sensor(Sensor {
+    pub fn add_input(&mut self) -> usize {
+        self.elements.push(Element::Input(Input {
             state: false,
         }));
         self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
@@ -253,7 +253,7 @@ impl Network {
             self.elements.remove(index);
             for (e,element) in self.elements.iter_mut().enumerate() {
                 match element {
-                    Element::Sensor(sensor) => {},
+                    Element::Input(input) => {},
                     Element::LogicNot(logic) => {
                         if logic.input == index {
                             logic.input = std::usize::MAX; // This is under the assumption that
@@ -316,13 +316,13 @@ impl Network {
                     } else if logic.processor == xor as fn(&Vec<usize>, &Network) -> bool {
                         Some(LogicType::XOR)
                     } else {
-                        Some(LogicType::SENSOR) // Seems the least risky option is to return a SENSOR
+                        Some(LogicType::INPUT) // Seems the least risky option is to return a INPUT
                                           // value if somehow the pointer is not aimed at any
                                           // specific function!?
                     }
                 }
                 Element::LogicNot(logic) => Some(LogicType::NOT),
-                Element::Sensor(sensor) => Some(LogicType::SENSOR),
+                Element::Input(input) => Some(LogicType::INPUT),
             }
         } else {
             None
@@ -333,7 +333,7 @@ impl Network {
             match element {
                 Element::Logic(logic) => Some(logic.state),
                 Element::LogicNot(logic) => Some(logic.state),
-                Element::Sensor(sensor) => Some(sensor.state),
+                Element::Input(input) => Some(input.state),
             }
         } else {
             None
@@ -349,7 +349,7 @@ impl Network {
                     let mut inputs: Vec<usize> = vec![logic.input];
                     Some(inputs)
                 }
-                Element::Sensor(sensor) => {
+                Element::Input(input) => {
                     None
                 }
             }
@@ -379,7 +379,7 @@ impl Network {
                         logic.input = inputs[0];
                         None
                     }
-                    Element::Sensor(sensor) => {
+                    Element::Input(input) => {
                         Some(non_existing_elements)
                     }
                 }
@@ -403,7 +403,7 @@ impl Network {
                         logic.input = input;
                         None
                     }
-                    Element::Sensor(sensor) => {
+                    Element::Input(input) => {
                         Some(index)
                     }
                 }
@@ -419,18 +419,18 @@ impl Network {
             match element {
                 Element::Logic(logic) => Some(logic.process(self)),
                 Element::LogicNot(logic) => Some(logic.process(self)),
-                Element::Sensor(sensor) => Some(sensor.process()),
+                Element::Input(input) => Some(input.process()),
             }
         } else {
             None
         }
     }
-    pub fn set_sensor_state(&mut self, index: usize, state: bool) -> Option<LogicType> {
+    pub fn set_input_state(&mut self, index: usize, state: bool) -> Option<LogicType> {
         if let Some(element) = self.elements.get_mut(index) {
             match element {
-                Element::Sensor(sensor) => {
-                    sensor.set_state(state);
-                    Some(LogicType::SENSOR)
+                Element::Input(input) => {
+                    input.set_state(state);
+                    Some(LogicType::INPUT)
                 }
                 _ => {
                     self.get_element_type(index)
@@ -465,7 +465,7 @@ impl Network {
                     Element::LogicNot(logic) => {
                         logic.set_state(self.stage_buffer[base_index]);
                     }
-                    Element::Sensor(sensor) => {}
+                    Element::Input(input) => {}
                 }
             }
         }
