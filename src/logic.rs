@@ -40,7 +40,10 @@ impl Logic {
         (self.processor)(&self.inputs)
     }
 }
-struct LogicNot {
+struct LogicNot { // It might be benifical to just make this a NOR, then we dont have to check for
+                  // std::usize::MAX for a no input situation. Although the processing may be
+                  // faster without the use of a vector the speedup might not be worth the
+                  // complexity? Think about this...
     state: bool,
     input: usize,
 }
@@ -75,7 +78,8 @@ impl Network {
                                                                                     // ownership of
                                                                                     // the inputs
                                                                                     // Vec<usize>
-        match element_type {
+        match element_type { // We still need to add the code for determining what section of
+                             // processing during the cycle per element.
             LogicType::AND => {
                 self.elements.push(Element::Logic(Logic {
                     state: false,
@@ -140,7 +144,40 @@ impl Network {
         self.elements.len()
     }
     fn remove_element(&mut self, index: usize) { // Perhaps return effected elements or a truth value?
-
+        if self.elements.len() >= index {
+            self.elements.remove(index);
+            for element in self.elements.iter_mut() {
+                match element {
+                    Element::Sensor(sensor) => {}
+                    Element::LogicNot(logic) => {
+                        if logic.input == index {
+                            logic.input = std::usize::MAX; // This is under the assumption that
+                                                             // the max usize value is basically
+                                                             // being used as no input. We must
+                                                             // decide if we really do want this to
+                                                             // be the case or if we should return
+                                                             // NOTS to be like NORS...? NO
+                                                             // ACTUALLY THIS CAUSES ERROR RIGHT
+                                                             // BECAUSE IN THE PROCESSING IT WILL
+                                                             // LOOK FOR AN ELEMENT AT THAT VALUE
+                                                             // UNLESS IT IS CAUGHT!!?! 
+                        } else if logic.input > index {
+                            logic.input -= 1;
+                        }
+                    }
+                    Element::Logic(logic) => {
+                        logic.inputs.retain(|&i| i != index); //Make sure this is removing the
+                                                              //element at that index.
+                        for input in logic.inputs.iter_mut() {
+                            if *input > index { // How is this safe rust? Take a minute to
+                                                // understand this at some point pls.
+                                *input -= 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     fn get_element_type(&self, index: usize) -> Option<LogicType> { // holdup gotta add sensor
         if let Some(element) = self.elements.get(index) {
