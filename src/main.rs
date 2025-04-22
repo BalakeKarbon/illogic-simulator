@@ -1,5 +1,3 @@
-//use crate::logic::LogicGraph;
-
 mod logic;
 
 fn test_cycle(network: &mut crate::logic::Network, elements: &Vec<usize>) {
@@ -67,6 +65,13 @@ fn main() {
     test_cycle(&mut test_net, &elements);
     test_cycle(&mut test_net, &elements);
     test_cycle(&mut test_net, &elements);
+    test_net.set_input_state(elements[0],false);
+    test_net.set_input_state(elements[1],false);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    println!("Removing element 2...");
+    test_net.remove_element(elements[2]);
     test_cycle(&mut test_net, &elements);
     test_cycle(&mut test_net, &elements);
     test_cycle(&mut test_net, &elements);
