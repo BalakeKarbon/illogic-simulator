@@ -2,6 +2,20 @@
 
 mod logic;
 
+fn test_cycle(network: &mut crate::logic::Network, elements: &Vec<usize>) {
+    network.cycle();
+    for element in elements.iter() {
+        if let Some(state) = network.get_element_state(*element) {
+            if state {
+                print!("|---T---");
+            } else {
+                print!("|   F   ");
+            }
+        }
+    }
+    println!("|");
+}
+
 fn main() {
     let mut test_net: crate::logic::Network = crate::logic::Network::new();
     let mut elements: Vec<usize> = Vec::new();
@@ -19,4 +33,41 @@ fn main() {
     test_net.add_element_input(elements[3],elements[1]);
     test_net.add_element_input(elements[3],elements[2]);
     println!("test_net size: {}",test_net.get_size());
+
+    println!("| Inp 1 | Inp 2 | NOR 1 | NOR 2 |");
+    for element in elements.iter() {
+        if let Some(state) = test_net.get_element_state(*element) {
+            if state {
+                print!("|---T---");
+            } else {
+                print!("|   F   ");
+            }
+        }
+    }
+    println!("|");
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_net.set_input_state(elements[0],true);
+    test_cycle(&mut test_net, &elements);
+    test_net.set_input_state(elements[0],false);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_net.set_input_state(elements[1],true);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_net.set_input_state(elements[1],false);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_net.set_input_state(elements[0],true);
+    test_net.set_input_state(elements[1],true);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
+    test_cycle(&mut test_net, &elements);
 }

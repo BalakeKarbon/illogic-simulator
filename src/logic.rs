@@ -169,7 +169,11 @@ impl Network {
                 }));
             }
         }
-        self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
+        let stage_size = ((self.elements.len()+self.stage_count)-1)/self.stage_count;
+        self.stage_buffer = Vec::with_capacity(stage_size);
+        for i in 0..stage_size {
+            self.stage_buffer.push(false);
+        }
         self.elements.len()-1
     }
     pub fn add_element(&mut self, element_type: LogicType, inputs: Vec<usize>) -> usize { // Takes
@@ -234,7 +238,11 @@ impl Network {
                     }));
                 }
             }
-            self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
+            let stage_size = ((self.elements.len()+self.stage_count)-1)/self.stage_count;
+            self.stage_buffer = Vec::with_capacity(stage_size);
+            for i in 0..stage_size {
+                self.stage_buffer.push(false);
+            }
             self.elements.len()-1
         } else {
             std::usize::MAX
@@ -244,7 +252,11 @@ impl Network {
         self.elements.push(Element::Input(Input {
             state: false,
         }));
-        self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
+        let stage_size = ((self.elements.len()+self.stage_count)-1)/self.stage_count;
+        self.stage_buffer = Vec::with_capacity(stage_size);
+        for i in 0..stage_size {
+            self.stage_buffer.push(false);
+        }
         self.elements.len()-1
     }
     pub fn remove_element(&mut self, index: usize) -> Vec<usize> { // Perhaps return effected elements or a truth value?
@@ -292,7 +304,11 @@ impl Network {
                 }
             }
         }
-        self.stage_buffer = Vec::with_capacity(((self.elements.len()+self.stage_count)-1)/self.stage_count);
+        let stage_size = ((self.elements.len()+self.stage_count)-1)/self.stage_count;
+        self.stage_buffer = Vec::with_capacity(stage_size);
+        for i in 0..stage_size {
+            self.stage_buffer.push(false);
+        }
         containing_elements
     }
     pub fn get_element_type(&self, index: usize) -> Option<LogicType> {
