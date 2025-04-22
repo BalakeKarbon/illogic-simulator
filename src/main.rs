@@ -17,9 +17,9 @@ fn test_cycle(network: &mut crate::logic::Network, elements: &Vec<usize>) {
 fn test_callback(state: bool) {
     print!("|=Latch=");
     if state {
-        println!("off!====================|");
-    } else {
         println!("on!=====================|");
+    } else {
+        println!("off!====================|");
     }
 }
 

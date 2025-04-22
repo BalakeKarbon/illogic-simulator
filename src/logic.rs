@@ -109,7 +109,7 @@ enum Element {
     LogicNot(LogicNot),
     Input(Input),
 }
-fn EmptySensor(state: bool) {
+fn empty_sensor(state: bool) {
 
 }
 impl Network {
@@ -133,7 +133,7 @@ impl Network {
                     processor: and,
                     inputs: Vec::new(), // This is going to throw an error for a copy or a reference
                                     // yeah...
-                    sensor: EmptySensor,
+                    sensor: empty_sensor,
                 }));
             }
             LogicType::OR => {
@@ -141,7 +141,7 @@ impl Network {
                     state: false,
                     processor: or,
                     inputs: Vec::new(),
-                    sensor: EmptySensor,
+                    sensor: empty_sensor,
                 }));
             }
             LogicType::NAND => {
@@ -149,7 +149,7 @@ impl Network {
                     state: false,
                     processor: nand,
                     inputs: Vec::new(),
-                    sensor: EmptySensor,
+                    sensor: empty_sensor,
                 }));
             }
             LogicType::NOR => {
@@ -157,7 +157,7 @@ impl Network {
                     state: false,
                     processor: nor,
                     inputs: Vec::new(),
-                    sensor: EmptySensor,
+                    sensor: empty_sensor,
                 }));
             }
             LogicType::XOR => {
@@ -165,14 +165,14 @@ impl Network {
                     state: false,
                     processor: xor,
                     inputs: Vec::new(),
-                    sensor: EmptySensor,
+                    sensor: empty_sensor,
                 }));
             }
             LogicType::NOT => {
                 self.elements.push(Element::LogicNot(LogicNot {
                     state: false,
                     input: std::usize::MAX,
-                    sensor: EmptySensor,
+                    sensor: empty_sensor,
                 }));
             }
             LogicType::INPUT => {
@@ -201,7 +201,7 @@ impl Network {
                         processor: and,
                         inputs: inputs, // This is going to throw an error for a copy or a reference
                                         // yeah...
-                        sensor: EmptySensor,
+                        sensor: empty_sensor,
                     }));
                 }
                 LogicType::OR => {
@@ -209,7 +209,7 @@ impl Network {
                         state: false,
                         processor: or,
                         inputs: inputs,
-                        sensor: EmptySensor,
+                        sensor: empty_sensor,
                     }));
                 }
                 LogicType::NAND => {
@@ -217,7 +217,7 @@ impl Network {
                         state: false,
                         processor: nand,
                         inputs: inputs,
-                        sensor: EmptySensor,
+                        sensor: empty_sensor,
                     }));
                 }
                 LogicType::NOR => {
@@ -225,7 +225,7 @@ impl Network {
                         state: false,
                         processor: nor,
                         inputs: inputs,
-                        sensor: EmptySensor,
+                        sensor: empty_sensor,
                     }));
                 }
                 LogicType::XOR => {
@@ -233,7 +233,7 @@ impl Network {
                         state: false,
                         processor: xor,
                         inputs: inputs, // What is the significance of XOR with more than two inputs?
-                        sensor: EmptySensor,
+                        sensor: empty_sensor,
                     }));
                 }
                 LogicType::NOT => {
@@ -242,7 +242,7 @@ impl Network {
                             self.elements.push(Element::LogicNot(LogicNot {
                                 state: false,
                                 input: input, //Returns Some????? Need more logic here folks.
-                                sensor: EmptySensor,
+                                sensor: empty_sensor,
                             }));
                         }
                         None => {
