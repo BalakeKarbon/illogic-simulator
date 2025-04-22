@@ -60,6 +60,8 @@ struct Logic {
     state: bool,
     processor: fn(&Vec<usize>, &Network) -> bool,
     inputs: Vec<usize>,
+    // We should probably add a sensor that can call a function pointer
+    sensor: fn(bool),
 }
 impl Logic {
     fn process(&self, network: &Network) -> bool {
@@ -75,6 +77,7 @@ struct LogicNot { // It might be benifical to just make this a NOR, then we dont
                   // complexity? Think about this...
     state: bool,
     input: usize,
+    sensor: fn(bool),
 }
 impl LogicNot {
     fn process(&self, network: &Network) -> bool {
@@ -106,6 +109,9 @@ enum Element {
     LogicNot(LogicNot),
     Input(Input),
 }
+fn EmptySensor(state: bool) {
+
+}
 impl Network {
     pub fn new() -> Self {
         Network {
@@ -127,6 +133,7 @@ impl Network {
                     processor: and,
                     inputs: Vec::new(), // This is going to throw an error for a copy or a reference
                                     // yeah...
+                    sensor: EmptySensor,
                 }));
             }
             LogicType::OR => {
@@ -134,6 +141,7 @@ impl Network {
                     state: false,
                     processor: or,
                     inputs: Vec::new(),
+                    sensor: EmptySensor,
                 }));
             }
             LogicType::NAND => {
@@ -141,6 +149,7 @@ impl Network {
                     state: false,
                     processor: nand,
                     inputs: Vec::new(),
+                    sensor: EmptySensor,
                 }));
             }
             LogicType::NOR => {
@@ -148,6 +157,7 @@ impl Network {
                     state: false,
                     processor: nor,
                     inputs: Vec::new(),
+                    sensor: EmptySensor,
                 }));
             }
             LogicType::XOR => {
@@ -155,12 +165,14 @@ impl Network {
                     state: false,
                     processor: xor,
                     inputs: Vec::new(),
+                    sensor: EmptySensor,
                 }));
             }
             LogicType::NOT => {
                 self.elements.push(Element::LogicNot(LogicNot {
                     state: false,
                     input: std::usize::MAX,
+                    sensor: EmptySensor,
                 }));
             }
             LogicType::INPUT => {
@@ -189,6 +201,7 @@ impl Network {
                         processor: and,
                         inputs: inputs, // This is going to throw an error for a copy or a reference
                                         // yeah...
+                        sensor: EmptySensor,
                     }));
                 }
                 LogicType::OR => {
@@ -196,6 +209,7 @@ impl Network {
                         state: false,
                         processor: or,
                         inputs: inputs,
+                        sensor: EmptySensor,
                     }));
                 }
                 LogicType::NAND => {
@@ -203,6 +217,7 @@ impl Network {
                         state: false,
                         processor: nand,
                         inputs: inputs,
+                        sensor: EmptySensor,
                     }));
                 }
                 LogicType::NOR => {
@@ -210,6 +225,7 @@ impl Network {
                         state: false,
                         processor: nor,
                         inputs: inputs,
+                        sensor: EmptySensor,
                     }));
                 }
                 LogicType::XOR => {
@@ -217,6 +233,7 @@ impl Network {
                         state: false,
                         processor: xor,
                         inputs: inputs, // What is the significance of XOR with more than two inputs?
+                        sensor: EmptySensor,
                     }));
                 }
                 LogicType::NOT => {
@@ -225,6 +242,7 @@ impl Network {
                             self.elements.push(Element::LogicNot(LogicNot {
                                 state: false,
                                 input: input, //Returns Some????? Need more logic here folks.
+                                sensor: EmptySensor,
                             }));
                         }
                         None => {
@@ -406,6 +424,25 @@ impl Network {
             Some(non_existing_elements)
         }
     }
+    pub fn set_element_sensor(&mut self, index: usize, callback: fn(bool)) -> bool {
+        if let Some(element) = self.elements.get_mut(index) {
+            match element {
+                Element::Logic(logic) => {
+                    logic.sensor = callback;
+                    true
+                }
+                Element::LogicNot(logic) => {
+                    logic.sensor = callback;
+                    true
+                }
+                Element::Input(input) => {
+                    false
+                }
+            }
+        } else {
+            false
+        }
+    }
     pub fn add_element_input(&mut self, index: usize, input: usize) -> Option<usize> {
         let mut non_existing_elements: Vec<usize> = self.elements_exist(&vec![input]);
         if non_existing_elements.len() == 0 {
@@ -476,10 +513,16 @@ impl Network {
             if let Some(element) = self.elements.get_mut((base_index*self.stage_count)+stage) {
                 match element {
                     Element::Logic(logic) => {
+                        if logic.state != self.stage_buffer[base_index] {
+                            (logic.sensor)(self.stage_buffer[base_index]);
+                        }
                         logic.set_state(self.stage_buffer[base_index]);
                     }
                     Element::LogicNot(logic) => {
                         logic.set_state(self.stage_buffer[base_index]);
+                        if logic.state != self.stage_buffer[base_index] {
+                            (logic.sensor)(self.stage_buffer[base_index]);
+                        }
                     }
                     Element::Input(input) => {}
                 }

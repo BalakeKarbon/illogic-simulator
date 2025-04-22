@@ -12,6 +12,15 @@ fn test_cycle(network: &mut crate::logic::Network, elements: &Vec<usize>) {
         }
     }
     println!("|");
+} 
+
+fn test_callback(state: bool) {
+    print!("|=Latch=");
+    if state {
+        println!("off!====================|");
+    } else {
+        println!("on!=====================|");
+    }
 }
 
 fn main() {
@@ -30,6 +39,7 @@ fn main() {
     test_net.add_element_input(elements[2],elements[3]);
     test_net.add_element_input(elements[3],elements[1]);
     test_net.add_element_input(elements[3],elements[2]);
+    test_net.set_element_sensor(elements[2],test_callback);
     println!("test_net size: {}",test_net.get_size());
 
     println!("| Inp 1 | Inp 2 | NOR 1 | NOR 2 |");
