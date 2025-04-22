@@ -1,4 +1,4 @@
-pub struct Network {
+pub struct Network { // TO-DO: Add catches for std::usize::MAX;
     elements: Vec<Element>,
     stage_count: usize, // Only using a usize as it will prevent allignment issues in the
                         // architecture and potentially provide a preformance boost. Some testing

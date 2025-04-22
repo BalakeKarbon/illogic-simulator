@@ -12,7 +12,7 @@ fn test_cycle(network: &mut crate::logic::Network, elements: &Vec<usize>) {
         }
     }
     println!("|");
-} 
+}
 
 fn test_callback(state: bool) {
     print!("|=Latch=");
